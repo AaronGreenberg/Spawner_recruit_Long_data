@@ -1,0 +1,42 @@
+library(shiny)
+library(shinythemes)
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(theme=shinytheme("flatly"),
+ #theme = "bootstrap.min.css",title="Depletion",
+                
+ #Application title
+  headerPanel(
+     HTML(
+            '
+           <img src="http://www.cfrn-rcrp.ca/styles/ccfrn_global/images/cfrn_rcrp_logo.png"  width="599" height="162"  alt="Smiley face" > 
+           <img src="http://brand.ubc.ca/files/2012/08/UBCLogo_Black1.png"  width="126" height="162"  alt="Smiley face" align="right" >
+            </div>'
+        )),
+
+  # Application title
+  titlePanel("Size Pyramid Project 3.3c "),
+
+  # Sidebar with a slider input for the number of bins
+  sidebarLayout(
+      sidebarPanel(
+                sliderInput("beginy",
+                            "Year:",
+                            sep="",
+                  min = 2003,
+                  max =2013,
+                  value = 2003),
+
+      sliderInput("begin",
+                  "Month:",
+                 
+                  min = 1,
+                  max =50,
+                  value = 1)
+    ),
+    # Show a plot of the generated distribution
+      mainPanel(
+          tabsetPanel(type = "tabs",
+                      tabPanel("Size pyramid count", plotOutput("countPlot")),
+                      tabPanel("Size pyramid percent", plotOutput("percentPlot"))
+    )))))
+      

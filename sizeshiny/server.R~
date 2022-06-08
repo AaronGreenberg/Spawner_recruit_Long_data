@@ -1,0 +1,83 @@
+#this script plots cpue vs cumulative catch for each area.
+#It omits
+library(shiny)
+
+shinyServer(function(input, output){
+data <- read.csv("Greenberg_Crab_StudyAreas_final.csv",sep=",",header=TRUE)    
+
+data$year <- as.factor(data$year)
+splitdata <- split(data,data$year)
+Nyears <- unique(data$year)
+dataInput <- reactive({
+rm(z)
+z <- vector()
+year <- input$beginy:input$endy
+print(year)
+begin=input$begin
+end=input$end
+
+for(i in year)
+{    
+    tmpdata <- splitdata[as.character(i)]
+    print(head(tmpdata))
+    tmpdata <- as.matrix(tmpdata[[1]][,3:length(tmpdata[[1]][1,])])
+ z <- c(z,as.vector(colSums(tmpdata,na.rm=TRUE)))
+}
+print(length(z))
+
+catch <- as.vector(z[seq(1,length(z),2)])
+effort <- as.vector(z[seq(2,length(z),2)])
+print(length(catch))
+index1 <- which(!is.na(catch))
+index2 <- which(!is.na(catch/effort))
+out <- list(begin=begin,end=end,z=z,catch=catch,effort=effort,index1=index1,index2=index2)
+return(out)
+})
+
+
+
+output$cpuePlot <- renderPlot({
+tmp <- dataInput()
+print(head(tmp))
+maxcpue<- max(c(tmp$catch/tmp$effort,0),na.rm=TRUE)
+if(maxcpue<10e99){
+    plot(1:length(tmp$catch),tmp$catch/tmp$effort,type="o",lty=2,xlab="week",cex=.5,ylab="cpue",ylim=(c(0,max(c(tmp$catch/tmp$effort,1),na.rm=TRUE))))
+    abline(v=tmp$begin,col="magenta")
+    abline(v=tmp$end,col="magenta")
+}
+})
+
+
+output$catchPlot <- renderPlot({
+tmp <- dataInput()
+print(length(1:length(tmp$catch)))
+plot(1:length(tmp$catch),tmp$catch,type="o",lty=2,xlab="week",cex=.5,ylab="catch",ylim=(c(0,max(c(tmp$catch,1),na.rm=TRUE))))
+abline(v=tmp$begin,col="magenta")
+    abline(v=tmp$end,col="magenta")
+})
+
+output$effortPlot <- renderPlot({
+tmp <- dataInput()
+plot(1:length(tmp$catch),tmp$effort,type="o",lty=2,xlab="week",cex=.5,ylab="effort",ylim=(c(0,max(c(tmp$effort,1),na.rm=TRUE))))
+abline(v=tmp$begin,col="magenta")
+abline(v=tmp$end,col="magenta")
+})
+
+output$depletionPlot <- renderPlot({
+tmp <- dataInput()
+cum <- vector()
+newindex=tmp$begin:tmp$end
+for(d in 1:length(newindex)){
+  cum[d] <- sum(tmp$catch[newindex[1:d]],na.rm=TRUE)
+}
+
+plot(cum,tmp$catch[newindex]/tmp$effort[newindex],type="p",cex=.5,ylim=(c(0,max(c(tmp$catch/tmp$effort,1),na.rm=TRUE))),xlab="cumulative catch",ylab="cpue")
+if(!is.na(var(tmp$catch[newindex]/tmp$effort[newindex], na.rm = TRUE))&& var(tmp$catch[newindex]/tmp$effort[newindex],na.rm=TRUE)>0){
+l=lm(tmp$catch[newindex]/tmp$effort[newindex]~cum)
+abline(l)
+leg <-bquote(paste(bar(Y)," = ",.(signif(l$coefficients[1],3)),"+",.(signif(l$coefficients[2],3)),"*x'", " ; ",r^2," = ",.(signif(summary(l)$r.squared,3))))
+legend("topright", bty="n", legend=leg)
+ title(main=bquote(paste("N0 =", .(-1*signif(l$coefficients[1]/l$coefficients[2],3)),"  ", "q=",.(signif(-1*l$coefficients[2],3)))))
+}
+})
+})
