@@ -3,7 +3,7 @@ graphics.off()
 rm(list=ls())
 source("Plots_tables.R")
 library("matrixStats")
-data <- read.csv("data.csv", sep=",",head=TRUE)
+data <- read.csv("data2.csv", sep=",",head=TRUE)
 data$smoltsurvival <-data$smoltsurvival
 data$SpawnerYr <- data$Year
 data$predfemalesmolt_pre_dam <- data$SpawnerYr*0
@@ -23,21 +23,19 @@ years <- 31
                                         #we want to estimate SF for a standard DPSDPE
 
 model <- function(SF,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
-{
+{  #This doesn't estimate initial size
 ages <- list(SpawnerYR=data$SpawnerYr,vir4=data$SpawnerYr*0,vir5=data$SpawnerYr*0,vir6=data$SpawnerYr*0,rep5=data$SpawnerYr*0, rep6 =data$SpawnerYr*0,rep7 =data$SpawnerYr*0,SpawnerAdult=data$SpawnerYr*0,Total=data$SpawnerYr*0)
 data$predSmoltAParameter<- 2078+data$SpawnerYr*0
-#print("oopsa")
-data$predfemalesmolt_pre_dam[1:7] <-SF* data$predSmoltAParameter[1:7]*data$FosterCount[1:7]/(1+data$predSmoltAParameter[1:7]*SF*data$FosterCount[1:7]/100000.0)
+data$predfemalesmolt_pre_dam[1:7] <-SF* data$predSmoltAParameter[1:7]*data$FosterCount[1:7]/(1+data$predSmoltAParameter[1:7]*SF*data$FosterCount[1:7]/100000.0) #initalize the first 7 years
 data$predfemalesmolt_post_dam[1:7] <- data$predfemalesmolt_pre_dam[1:7]*data$passprob[1:7]
 data$OceanAdults[1:7] <- data$predfemalesmolt_post_dam[1:7]*data$smoltsurvival[1:7]*.74
 ages$vir4[1:7] <- Percent4*data$OceanAdults[1:7]
 ages$vir5[1:7] <- Percent5*data$OceanAdults[1:7]
 ages$vir6[1:7] <- Percent6*data$OceanAdults[1:7]
-#print("oopsnana")
 ages$rep5[1:7]=Repeat6*ages$vir4[1:7]
 ages$rep6[1:7]=Repeat6*ages$vir5[1:7]
-ages$rep7[1:7]=Repeat6*ages$vir5[1:7]
-#print("oops1")
+ages$rep7[1:7]=Repeat6*ages$vir6[1:7]
+
 for(i in 8:years)
 {
     ages$SpawnerAdult[i]=ages$vir4[i-4]+ages$vir5[i-5]+ages$vir6[i-6]+ages$rep5[i-5]+ages$rep6[i-6]+ages$rep7[i-7]
@@ -62,33 +60,22 @@ return(list(data=data,ages=ages,eps=eps))
 
 
 
-fn <- function(par,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data){
-    eps <- model(par[1],DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
-    nll <--1*sum(log(dnorm(eps$ages$SpawnerAdult[15:(years-1)],eps$data$FosterCount[15:(years-1)],par[2])))
-    #nll <--1*sum(log(dnorm(eps$ages$Total[15:(years-5)],eps$data$FosterCount[20:(years-1)],par[2])))
-return(nll)
-}
-
-
 
 
 modelinit <- function(SF,init,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
-{
+{ #this estimates initial abundance 
 ages <- list(SpawnerYR=data$SpawnerYr,vir4=data$SpawnerYr*0,vir5=data$SpawnerYr*0,vir6=data$SpawnerYr*0,rep5=data$SpawnerYr*0, rep6 =data$SpawnerYr*0,rep7 =data$SpawnerYr*0,SpawnerAdult=data$SpawnerYr*0,Total=data$SpawnerYr*0)
 data$predSmoltAParameter<- 2078+data$SpawnerYr*0
-#print("oopsa")
 data$predfemalesmolt_pre_dam[1:7] <-SF* data$predSmoltAParameter[1:7]*(init+0*data$FosterCount[1:7])/(1+data$predSmoltAParameter[1:7]*SF*(init+0*data$FosterCount[1:7])/100000.0)
 data$predfemalesmolt_post_dam[1:7] <- data$predfemalesmolt_pre_dam[1:7]*data$passprob[1:7]
 data$OceanAdults[1:7] <- data$predfemalesmolt_post_dam[1:7]*data$smoltsurvival[1:7]*.74
 ages$vir4[1:7] <- Percent4*data$OceanAdults[1:7]
 ages$vir5[1:7] <- Percent5*data$OceanAdults[1:7]
 ages$vir6[1:7] <- Percent6*data$OceanAdults[1:7]
-#print("oopsnana")
 ages$rep5[1:7]=Repeat6*ages$vir4[1:7]
 ages$rep6[1:7]=Repeat6*ages$vir5[1:7]
 ages$rep7[1:7]=Repeat6*ages$vir5[1:7]
 ages$SpawnerAdult[1:7]=init
-#print("oops1")
 for(i in 8:years)
 {
     ages$SpawnerAdult[i]=ages$vir4[i-4]+ages$vir5[i-5]+ages$vir6[i-6]+ages$rep5[i-5]+ages$rep6[i-6]+ages$rep7[i-7]
@@ -115,21 +102,19 @@ return(list(data=data,ages=ages,eps=eps))
 
 
 modelconst <- function(SF,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
-{
+{ #assumes that there are always 200 spawners. So the Stock recruit relationship is...
 ages <- list(SpawnerYR=data$SpawnerYr,vir4=data$SpawnerYr*0,vir5=data$SpawnerYr*0,vir6=data$SpawnerYr*0,rep5=data$SpawnerYr*0, rep6 =data$SpawnerYr*0,rep7 =data$SpawnerYr*0,SpawnerAdult=data$SpawnerYr*0,Total=data$SpawnerYr*0)
 data$predSmoltAParameter<- 2078+data$SpawnerYr*0
-#print("oopsa")
 data$predfemalesmolt_pre_dam[1:7] <-SF* data$predSmoltAParameter[1:7]*200
 data$predfemalesmolt_post_dam[1:7] <- data$predfemalesmolt_pre_dam[1:7]*data$passprob[1:7]
 data$OceanAdults[1:7] <- data$predfemalesmolt_post_dam[1:7]*data$smoltsurvival[1:7]*.74
 ages$vir4[1:7] <- Percent4*data$OceanAdults[1:7]
 ages$vir5[1:7] <- Percent5*data$OceanAdults[1:7]
 ages$vir6[1:7] <- Percent6*data$OceanAdults[1:7]
-#print("oopsnana")
 ages$rep5[1:7]=Repeat6*ages$vir4[1:7]
 ages$rep6[1:7]=Repeat6*ages$vir5[1:7]
 ages$rep7[1:7]=Repeat6*ages$vir5[1:7]
-#print("oops1")
+
 for(i in 8:years)
 {
     ages$SpawnerAdult[i]=ages$vir4[i-4]+ages$vir5[i-5]+ages$vir6[i-6]+ages$rep5[i-5]+ages$rep6[i-6]+ages$rep7[i-7]
@@ -154,21 +139,18 @@ return(list(data=data,ages=ages,eps=eps))
 
 
 modellin <- function(SF,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
-{
+{ #assumes away density dependence.  
 ages <- list(SpawnerYR=data$SpawnerYr,vir4=data$SpawnerYr*0,vir5=data$SpawnerYr*0,vir6=data$SpawnerYr*0,rep5=data$SpawnerYr*0, rep6 =data$SpawnerYr*0,rep7 =data$SpawnerYr*0,SpawnerAdult=data$SpawnerYr*0,Total=data$SpawnerYr*0)
 data$predSmoltAParameter<- 2078+data$SpawnerYr*0
-#print("oopsa")
 data$predfemalesmolt_pre_dam[1:7] <-SF* data$predSmoltAParameter[1:7]*data$FosterCount[1:7]
 data$predfemalesmolt_post_dam[1:7] <- data$predfemalesmolt_pre_dam[1:7]*data$passprob[1:7]
 data$OceanAdults[1:7] <- data$predfemalesmolt_post_dam[1:7]*data$smoltsurvival[1:7]*.74
 ages$vir4[1:7] <- Percent4*data$OceanAdults[1:7]
 ages$vir5[1:7] <- Percent5*data$OceanAdults[1:7]
 ages$vir6[1:7] <- Percent6*data$OceanAdults[1:7]
-#print("oopsnana")
 ages$rep5[1:7]=Repeat6*ages$vir4[1:7]
 ages$rep6[1:7]=Repeat6*ages$vir5[1:7]
 ages$rep7[1:7]=Repeat6*ages$vir5[1:7]
-#print("oops1")
 for(i in 8:years)
 {
     ages$SpawnerAdult[i]=ages$vir4[i-4]+ages$vir5[i-5]+ages$vir6[i-6]+ages$rep5[i-5]+ages$rep6[i-6]+ages$rep7[i-7]
@@ -195,27 +177,20 @@ return(list(data=data,ages=ages,eps=eps))
 
 
 
+#likelyhood functions. 
+fn <- function(par,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data){
+    eps <- model(par[1],DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
+    nll <--1*sum(log(dnorm(eps$ages$SpawnerAdult[16:(years-1)],eps$data$FosterCount[16:(years-1)],par[2])))
+    #nll <--1*sum(log(dnorm(eps$ages$Total[16:(years-5)],eps$data$FosterCount[20:(years-1)],par[2])))
+return(nll)
+}
 
 
 
-test <- model(.0275,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
-#write.csv(test$data,file="test.csv")
-print(test$data)
 
-## inputs <- c(.053,100)
-## z=optim(par=inputs,fn=fn,gr=NULL,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data,hessian=TRUE,control=c(reltol=10^-32,maxit=5000))
-## sdcon <- sqrt(diag(solve(z$hessian)))
-## print(z)
-
-## test2 <- model(z$par[1],DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data)
-## print(test2$data)
-
-## plot(test2$data$FosterCount)
-## abline(v=7,col="red")
-## lines(test2$ages$SpawnerAdult)
 fnlin <- function(par,DPSDPE,years,Percent4,Percent5,Repeat5,Repeat6,data){
     eps <- modellin(par[1],DPSDPE,years,Percent4,Percent5,Repeat5,Repeat6,data)
-    nll <--1*sum(log(dnorm(eps$ages$SpawnerAdult[15:(years-1)],eps$data$FosterCount[15:(years-1)],par[2])))
+    nll <--1*sum(log(dnorm(eps$ages$SpawnerAdult[16:(years-1)],eps$data$FosterCount[16:(years-1)],par[2])))
     
 return(nll)
 }
@@ -224,26 +199,30 @@ return(nll)
 
 fnconst <- function(par,DPSDPE,years,Percent4,Percent5,Repeat5,Repeat6,data){
     eps <- modelconst(par[1],DPSDPE,years,Percent4,Percent5,Repeat5,Repeat6,data)
-    nll <--1*sum(log(dnorm(eps$ages$SpawnerAdult[15:(years-1)],eps$data$FosterCount[15:(years-1)],par[2])))
+    nll <--1*sum(log(dnorm(eps$ages$SpawnerAdult[16:(years-1)],eps$data$FosterCount[16:(years-1)],par[2])))
 return(nll)
 }
 
 
+#The most important likelyhood function
+#the indices will change depending on data file. 
 fninit <- function(par,DPSDPE,years,Percent4,Percent5,Repeat5,Repeat6,data){
     eps <- modelinit(par[1],par[2],DPSDPE,years,Percent4,Percent5,Repeat5,Repeat6,data)
-    eps2 <-(eps$data$FosterCount[15:(years-1)])-(eps$ages$SpawnerAdult[15:(years-1)])
-    nll <--1*sum(log(dnorm((eps2),0,par[3])))-log(dlnorm(par[2],log(142),64))
+    #eps2 <-log(eps$data$FosterCount[16:(years-1)])-log(eps$ages$SpawnerAdult[16:(years-1)])
+                                        #nll <--1*sum(log(dnorm((eps2),0,par[3])))-log(dlnorm(par[2],log(142),(.53)))
+      nll <--1*sum(log(dlnorm(eps$data$FosterCount[16:(years-1)],log(eps$ages$SpawnerAdult[16:(years-1)]),par[3])))-log(dlnorm(par[2],log(142),(.53)))
+    
 return(nll)
 }
 
-inputs <- c(.053,100,30)
+inputs <- c(.03,200,30) #initializaton
 z=optim(par=inputs,fn=fninit,gr=NULL,DPSDPE,years,Percent4,Percent5,Percent6,Repeat6,data,hessian=TRUE,control=c(reltol=10^-32,maxit=5000))
 sdcon <- sqrt(diag(solve(z$hessian)))
 print(z)
 
 
-simmaker <- function(nsims=100000,years=50,z,sdcon)
-{
+simmaker <- function(nsims=100000,years=100,z,sdcon)
+{ #simulate marine surivival and freshwater surivival
     set.seed(1999)
     s <- 1:(years)
     ssin <- matrix(nrow=nsims,ncol=years)
@@ -257,7 +236,7 @@ simmaker <- function(nsims=100000,years=50,z,sdcon)
         s[which(s<=0)] <- 0
         ssin[i,] <- s
         ssin[i,1:6] <- par[1]
-        srand[i,1:years] <- sample(data$smoltsurvival[7:18],length(1:years),replace=TRUE) #probably needs to be chainged
+        srand[i,1:years] <- sample(data$smoltsurvival[1:23],length(1:years),replace=TRUE) #probably needs to be chainged
         par <- c(0.01310638, 0.64901850, 0.01173065, 0.01698823)
         sar[i,1:6] <- par[1]
         s <- s*0
@@ -272,23 +251,23 @@ simmaker <- function(nsims=100000,years=50,z,sdcon)
 
         }
     
-     cov=as.data.frame(solve(z$hessian))
+     cov=as.data.frame(solve(z$hessian)) #draw freshwater surival and initial population size
     tab= MASS::mvrnorm(nsims,z$par,cov)
     fresh <- tab[,1]
     init<-  tab[,2]                  
     return(list(ssin=ssin,srand=srand,sar=sar,fresh=fresh,init=init))
     }
 
-sims=simmaker(nsims=10000,years=50,z,sdcon)
+sims=simmaker(nsims=100000,years=100,z,sdcon)
 
 
 
 
-
-forcastmodel <- function(EIS,mortR,marinescale,years,Percent4,Percent5,Repeat5,Repeat6,data,DPE=1,DPS=1,river=1,simindex)
+#forcast things into the future
+forcastmodel <- function(EIS,mortR,marinescale,years=100,Percent4,Percent5,Repeat5,Repeat6,data,DPE=1,DPS=1,river=1,simindex)
 {
-    ages <- list(SpawnerYR=1:years,vir4=1:years*0,vir5=1:years*0,repeat5=1:years*0, repeat6 =1:years*0,Total=1:years*0)
-
+    ages <- list(SpawnerYR=1:years,vir4=1:years*0,vir5=1:years*0,vir6=1:years*0,rep6=1:years*0, rep7 =1:years*0,Total=1:years*0,SpawnerAdult=1:years*0)
+    
     if(river==1){
         capacityfac=76473
         freshscale=1
@@ -547,26 +526,44 @@ if(EIS==0)
     index <- sample(1:length(FOS_Age2$x.Year),years,replace=TRUE)
     data <- as.list(data)
     length(data$predfemalesmolt_pre_dam) <- years
+ #   length(data$predSmoltAParameter) <- years
     data$predSmoltAParameter <- 1:years*0
 
     data$predSmoltAParameter<- 1:years*0+ 2078
     
-ages <- list(SpawnerYR=data$SpawnerYr,vir4=data$SpawnerYr*0,vir5=data$SpawnerYr*0,vir6=data$SpawnerYr*0,rep5=data$SpawnerYr*0, rep6 =data$SpawnerYr*0,rep7 =data$SpawnerYr*0,SpawnerAdult=data$SpawnerYr*0,Total=data$SpawnerYr*0)
-data$predSmoltAParameter<- 2078+data$SpawnerYr*0
+#ges <- list(SpawnerYR=data$SpawnerYr,vir4=data$SpawnerYr*0,vir5=data$SpawnerYr*0,vir6=data$SpawnerYr*0,rep5=data$SpawnerYr*0, rep6 =data$SpawnerYr*0,rep7 =data$SpawnerYr*0,SpawnerAdult=data$SpawnerYr*0,Total=data$SpawnerYr*0)
+                                        #data$predSmoltAParameter<- 2078+ages$SpawnerYr*0
+ages$SpawnerAdult[1:7]=sims$init[simindex]
 data$predfemalesmolt_pre_dam[1:7] <- data$predSmoltAParameter[1:7]*(sims$init[simindex]+0*data$FosterCount[1:7])*sims$fresh[simindex]*freshscale/(1+data$predSmoltAParameter[1:7]*(sims$init[simindex]+0*data$FosterCount[1:7])*sims$fresh[simindex]*freshscale/capacityfac)
-data$predfemalesmolt_post_dam[1:7] <- data$predfemalesmolt_pre_dam[1:7]*FOS_Age2$x.DPS[index[1:7]]*FOS_Age2$x.DPE[index[1:7]]
-data$OceanAdults[1:7] <- data$predfemalesmolt_post_dam[1:7]*simforcast[1:7]*marinescale *.74
+data$predfemalesmolt_post_dam[1:7] <- data$predfemalesmolt_pre_dam[1:7]*data$passprob[1:7]
+data$OceanAdults[1:7] <- data$predfemalesmolt_post_dam[1:7]*data$smoltsurvival[1:7]*marinescale *.74
 ages$vir4[1:7] <- Percent4*data$OceanAdults[1:7]
 ages$vir5[1:7] <- Percent5*data$OceanAdults[1:7]
 ages$vir6[1:7] <- Percent6*data$OceanAdults[1:7]
 ages$rep5[1:7]=Repeat6*ages$vir4[1:7]
 ages$rep6[1:7]=Repeat6*ages$vir5[1:7]
 ages$rep7[1:7]=Repeat6*ages$vir5[1:7]
-for(i in 8:years)
+for(i in 8:24)
 {
 
   ages$SpawnerAdult[i]=ages$vir4[i-4]+ages$vir5[i-5]+ages$vir6[i-6]+ages$rep5[i-5]+ages$rep6[i-6]+ages$rep7[i-7]
   data$predfemalesmolt_pre_dam[i]=(data$predSmoltAParameter[i]*sims$fresh[simindex]*freshscale*ages$SpawnerAdult[i])/(1+(data$predSmoltAParameter[i]*ages$SpawnerAdult[i]*sims$fresh[simindex]*freshscale/capacityfac))
+  data$predfemalesmolt_post_dam[i]=data$predfemalesmolt_pre_dam[i]*data$passprob[i]
+  data$OceanAdults[i]=data$predfemalesmolt_post_dam[i]*data$smoltsurvival[i]*marinescale *.74
+  ages$vir4[i]=Percent4*data$OceanAdults[i]
+  ages$vir5[i]=Percent5*data$OceanAdults[i]
+  ages$vir6[i]=Percent6*data$OceanAdults[i]
+  ages$rep5[i]=Repeat6*ages$vir4[i-1]
+  ages$rep6[i]=Repeat6*ages$vir5[i-1]
+  ages$rep7[i]=Repeat6*ages$vir6[i-1]
+}
+
+    
+    for(i in 25:years)
+{
+    
+    ages$SpawnerAdult[i]=ages$vir4[i-4]+ages$vir5[i-5]+ages$vir6[i-6]+ages$rep5[i-5]+ages$rep6[i-6]+ages$rep7[i-7]
+    data$predfemalesmolt_pre_dam[i]=(data$predSmoltAParameter[i]*sims$fresh[simindex]*freshscale*ages$SpawnerAdult[i])/(1+(data$predSmoltAParameter[i]*ages$SpawnerAdult[i]*sims$fresh[simindex]*freshscale/capacityfac))
   data$predfemalesmolt_post_dam[i]=data$predfemalesmolt_pre_dam[i]*FOS_Age2$x.DPS[index[i]]*FOS_Age2$x.DPE[index[i]]
   data$OceanAdults[i]=data$predfemalesmolt_post_dam[i]*simforcast[i]*marinescale *.74
   ages$vir4[i]=Percent4*data$OceanAdults[i]
@@ -584,8 +581,8 @@ eps <- data$FosterCount[17:years]-ages$Total[13:(years-4)]
 QETave <-stats::filter(ages$SpawnerAdult, rep(1,5), sides = 1)/5
 QETave[is.na(QETave)] <- 0
         
-RS <- exp(mean(log(data$OceanAdults[15:(15+5)]/ages$SpawnerAdult[(15):(15+5)])))
-abun <- exp(mean(log(ages$Total[21:(30)]),na.rm=TRUE))
+RS <- exp(mean(log(data$OceanAdults[25:(25+5)]/ages$SpawnerAdult[(25):(25+5)])))
+abun <- exp(mean(log(ages$Total[25:(50)]),na.rm=TRUE))
 return(list(data=data,ages=ages,eps=eps,sim=simforcast[1:years],RS=RS,abund=abun,QET=QETave,DPS=FOS_Age2$x.DPS[index],DPE= FOS_Age2$x.DPE[index],confi=sims$fresh[simindex]*freshscale))
 
 }
@@ -603,7 +600,7 @@ return(list(data=data,ages=ages,eps=eps,sim=simforcast[1:years],RS=RS,abund=abun
 
 
 data_forcast <- function(out,sdcon,z,years,EIS,marinescale=1,mortR=2,DPE=1,DPS=1,river=1,ssize=1000)
-{
+{ #do lots of simulations
 conmat <-matrix(NA,nrow=ssize,ncol=years)
 QETamat <-matrix(NA,nrow=ssize,ncol=years)        
 simmat <-matrix(NA,nrow=ssize,ncol=years)
@@ -624,12 +621,12 @@ for( i in 1:ssize)
     QETamat[i,1:(years-1)] <- out$QET[1:(years-1)]
     DPEmat[i,1:(years-1)] <- out$DPE[1:(years-1)]
     DPSmat[i,1:(years-1)] <- out$DPS[1:(years-1)]
-    RSmat[i,(15):(years-1)] <- out$data$OceanAdults[(15):(years-1)]/out$ages$SpawnerAdult[(15):(years-1)]
+    RSmat[i,(8):(years-1)] <- out$data$OceanAdults[(8):(years-1)]/out$ages$SpawnerAdult[(8):(years-1)]
     QETmat[i,] <- ifelse(out$QET[1:(years)]>100,0,1)
     RSvec[i]=out$RS
     Abunvec[i]=out$abund
-    marineSvec[i] <- mean(out$sim[15:(15+5)])
-    QETvec[i] <- ifelse(min(out$QET[15:(years-1)],na.rm=TRUE)>100,0,1)
+    marineSvec[i] <- mean(out$sim[25:(25+5)])
+    QETvec[i] <- ifelse(min(out$QET[25:(25+15)],na.rm=TRUE)>100,0,1)
     confi2[i] <- out$confi
  
 }
@@ -638,7 +635,7 @@ return(list(conmat=conmat,simmat=simmat,QETamat=QETamat,DPEmat=DPEmat,DPSmat=DPS
 
 
 data_forcast2 <- function(out,sdcon,z,years,EIS,marinescale=1,mortR=2,DPE=1,DPS=1,ssize=1000)
-{
+{ #do lots of simulations when adding rivers together.  This might be able to be merged with data_forcast, but since the adding of two independent streams is slightly tricky it got broken out. 
 confi <- rnorm(ssize,z$par[1],sd=sdcon[1])            
 conmat <-matrix(NA,nrow=ssize,ncol=years)
 QETamat <-matrix(NA,nrow=ssize,ncol=years)        
@@ -662,27 +659,27 @@ for( i in 1:ssize)
     QETamat[i,1:(years-1)] <-(out$QET[1:(years-1)]+out2$QET[1:(years-1)])
     DPEmat[i,1:(years-1)] <- (out$DPE[1:(years-1)]+out2$DPE[1:(years-1)])/2
     DPSmat[i,1:(years-1)] <- (out$DPS[1:(years-1)]+out2$DPS[1:(years-1)])/2
-    RSmat[i,(15):(years-1)] <- (out$data$OceanAdults[(15):(years-1)]+out2$data$OceanAdults[(15):(years-1)])/(out$ages$SpawnerAdult[(15-4):(years-5)]+out2$ages$SpawnerAdult[(15-4):(years-5)])
+    RSmat[i,(8):(years-1)] <- (out$data$OceanAdults[(8):(years-1)]+out2$data$OceanAdults[(8):(years-1)])/(out$ages$SpawnerAdult[(8):(years-1)]+out2$ages$SpawnerAdult[(8):(years-1)])
     QETmat[i,] <- ifelse(out$QET[1:years]+out$QET[1:years]>100,0,1)
-    RSvec[i]=exp(mean(log((out$data$OceanAdults[(15):(15+5)]+out2$data$OceanAdults[(15):(15+5)])/(out$ages$SpawnerAdult[(15):(15+5)]+out2$ages$SpawnerAdult[(15):(15+5)]))))
-    Abunvec[i]=exp(mean(log((out$ages$SpawnerAdult[(21):(30)]+out2$ages$SpawnerAdult[21:30]))))
-    marineSvec[i] <- mean((out$sim[15:(15+5)]+out2$sim[15:(15+5)])/2)
-    QETvec[i] <- ifelse(min(out$QET[15:(years-1)]+out2$QET[15:(years-1)],na.rm=TRUE)>100,0,1)
+    RSvec[i]=exp(mean(log((out$data$OceanAdults[(25):(25+5)]+out2$data$OceanAdults[(25):(25+5)])/(out$ages$SpawnerAdult[(25):(25+5)]+out2$ages$SpawnerAdult[(25):(25+5)]))))
+    Abunvec[i]=exp(mean(log((out$ages$SpawnerAdult[(25):(50)]+out2$ages$SpawnerAdult[25:50]))))
+    marineSvec[i] <- mean((out$sim[25:(25+5)]+out2$sim[25:(25+5)])/2)
+    QETvec[i] <- ifelse(min(out$QET[25:(25+15)]+out2$QET[25:(25+15)],na.rm=TRUE)>100,0,1)
        confi2[i] <-(out$confi+out2$confi)/2 
     }else
         {
     
-    conmat[i,1:(years-1)] <-out$ages$SpawnerAdult[1:(years-1)]
+    conmat[i,1:(years-1)] <-out$ages$SpawnerAdult[1:(years-1)] #not all EIS alternatives 
     simmat[i,1:(years-1)] <- out$sim[1:(years-1)]
     QETamat[i,1:(years-1)] <- out$QET[1:(years-1)]
     DPEmat[i,1:(years-1)] <- out$DPE[1:(years-1)]
     DPSmat[i,1:(years-1)] <- out$DPS[1:(years-1)]
-    RSmat[i,(15):(years-1)] <- out$data$OceanAdults[(15):(years-1)]/out$ages$SpawnerAdult[(15):(years-1)]
+    RSmat[i,(8):(years-1)] <- out$data$OceanAdults[(8):(years-1)]/out$ages$SpawnerAdult[(8):(years-1)]
     QETmat[i,] <- ifelse(out$QET[1:years]>100,0,1)
     RSvec[i]=out$RS
     Abunvec[i]=out$abund
-    marineSvec[i] <- mean(out$sim[15:(15+5)])
-    QETvec[i] <- ifelse(min(out$QET[7:(years-1)],na.rm=TRUE)>100,0,1)
+    marineSvec[i] <- mean(out$sim[25:(25+5)])
+    QETvec[i] <- ifelse(min(out$QET[25:(25+15)],na.rm=TRUE)>100,0,1)
             confi2[i] <-out$confi 
    
 }
@@ -692,10 +689,14 @@ return(list(conmat=conmat,simmat=simmat,QETamat=QETamat,DPEmat=DPEmat,DPSmat=DPS
 
 
 
+#below makes tables and figures for everything! 
+
+
+
 library(svglite)
 qplot <- function(list,file,title)
 {
-setwd("/home/daft/Dropbox/Steelhead_Rcode/Spawner_recruit/Results")            
+setwd("/home/daft/Dropbox/Steelhead_Rcode/Spawner_recruit_Long_data/Results")            
 svglite(file=paste(file,"1.svg",sep=""))
 plot_forcast(list,1,title)
 dev.off()
@@ -705,7 +706,7 @@ dev.off()
 s <- table_forcast(list,title)
 
 write.csv(file=paste(file,".csv",sep=""),s$table)
-setwd("/home/daft/Dropbox/Steelhead_Rcode/Spawner_recruit")        
+setwd("/home/daft/Dropbox/Steelhead_Rcode/Spawner_recruit_Long_data")   #these make special directories to store stuff might need to be changed on your computer     
 return(s)
 }
 
@@ -714,10 +715,17 @@ require(KernSmooth)
 require(Cairo)
 require(tikzDevice)
 
-egg<-function(xx,yy,col1="red",bw=20,title="m")
+egg<-function(xx,yy,col1="red",bw=20,title="m") #egg plot possibly will move to plot routines
 {
+    ## print(xx)
+    ## print(yy)
+    xindex=which(xx>100000)
+    yindex=which(yy>100000)
+    xx[xindex]=100000
+    yy[yindex]=100000
     bwx=abs((max(xx,na.rm=TRUE)-min(xx,na.rm=TRUE))/bw)
     bwy=abs((max(yy,na.rm=TRUE)-min(yy,na.rm=TRUE))/bw)
+    
 	est <- bkde2D(cbind(xx,yy),bandwidth=c(bwx,bwy),gridsize=c(81, 81))
 	est$fhat=est$fhat/max(est$fhat,na.rm=TRUE)
 	lvs=c(0.05,.2,0.9)
@@ -738,17 +746,18 @@ egg<-function(xx,yy,col1="red",bw=20,title="m")
 
 
 
-FA1 <- data_forcast(out,sdcon,z,years,1,marinescale=1,mortR=2,DPE=1,DPS=1,river=1,ssize=100)
-print(FA1$conmat)
+FA1 <- data_forcast(out,sdcon,z,100,1,marinescale=1,mortR=2,DPE=1,DPS=1,river=1,ssize=1  )
+#print(FA1$conmat)
 
 
 
 
-results <- function(numbersims=100000,morttype=2)
+results <- function(numbersims=100000,morttype=2,years=100)
     {
 
 
-#Foster    
+                                        #Foster
+                     print("Foster")   
 FA1 <- data_forcast(out,sdcon,z,years,1,marinescale=1,mortR=morttype,DPE=1,DPS=1,river=1,ssize=numbersims)
 FA2a <- data_forcast(out,sdcon,z,years,2,marinescale=1,mortR=morttype,DPE=1,DPS=1,river=1,ssize=numbersims)
 FA2b <- data_forcast(out,sdcon,z,years,3,marinescale=1,mortR=morttype,DPE=1,DPS=1,river=1,ssize=numbersims)
@@ -758,6 +767,8 @@ FA4 <- data_forcast(out,sdcon,z,years,6,marinescale=1,mortR=morttype,DPE=1,DPS=1
 FNAA <- data_forcast(out,sdcon,z,years,7,marinescale=1,mortR=morttype,DPE=1,DPS=1,river=1,ssize=numbersims)
 
 f1 <- qplot(FA1,"FA1","Foster A1")
+print(f1$RS)
+print(f1$Abun)
 f2 <- qplot(FA2a,"FA2a","Foster A2a")
 f3 <- qplot(FA2b,"FA2b","Foster A2b")
 f4 <- qplot(FA3a,"FA3a","Foster A3a")
@@ -768,19 +779,9 @@ summaryt <- data.frame("FOS"=c("Recruits Per Spawner (R/S)","Geomean Spawners (N
                        FA1=f1$table["Median"],FA2a=f2$table["Median"],FA2b=f3$table["Median"],FA3a=f4$table["Median"],FA3b=f5$table["Median"],FA4=f6$table["Median"],FNAA=f7$table["Median"])
 colnames(summaryt) <- c("FOS","A1","A2a","A2b","A3a","A3b","A4","NAA")
 write.csv(file="Foster.Summary.csv",summaryt)
-svglite(file="Foster_trade.svg")
-        rgb.val <- col2rgb("grey27")
-        alpha1=50
-plot(NA,NA,xlim=c(0,3), ylim=c(0,2000), ylab="Geo mean Spawners", xlab= "Recruits per Spawner") 
-        egg(f1$RS,f1$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A1")
-        egg(f2$RS,f2$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2A")
-        egg(f3$RS,f3$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2B")
-        egg(f4$RS,f4$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3a")
-        egg(f5$RS,f5$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3b")
-        egg(f6$RS,f6$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A4")
-        egg(f7$RS,f7$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="NAA")
-        dev.off()
-## #Greenpeter
+        ## #Greenpeter
+
+             print("GreenPeter")   
 GPA1 <- data_forcast(out,sdcon,z,years,1,marinescale=1,mortR=morttype,DPE=1,DPS=1,river=2,ssize=numbersims)
 GPA2a <- data_forcast(out,sdcon,z,years,2,marinescale=1,mortR=morttype,DPE=1,DPS=1,river=2,ssize=numbersims)
 GPA2b <- data_forcast(out,sdcon,z,years,3,marinescale=1,mortR=morttype,DPE=1,DPS=1,river=2,ssize=numbersims)
@@ -797,17 +798,8 @@ summaryt <- data.frame("GRP"=c("Recruits Per Spawner (R/S)","Geomean Spawners (N
 colnames(summaryt) <- c("GP","A1","A2a","A2b","A3a","A3b")
 write.csv(file="Green.Peter.Summary.csv",summaryt)
 
-svglite(file="Green_trade.svg")
-       rgb.val <- col2rgb("grey27")
-        alpha1=50
-plot(NA,NA,xlim=c(0,3), ylim=c(0,2000), ylab="Geo mean Spawners", xlab= "Recruits per Spawner") 
-        egg(gp1$RS,gp1$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A1")
-        egg(gp2$RS,gp2$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2A")
-        egg(gp3$RS,gp3$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2B")
-        egg(gp4$RS,gp4$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3a")
-        egg(gp5$RS,gp5$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3b")
-        dev.off()
 #
+     print("Detroit")   
 
 
         
@@ -834,18 +826,9 @@ summaryt <- data.frame("DET"=c("Recruits Per Spawner (R/S)","Geomean Spawners (N
 colnames(summaryt) <- c("DET","A1","A2a","A2b","A3a","A3b","A4","NAA")
 write.csv(file="Detroit.Summary.csv",summaryt)
 
-     svglite(file="Det_trade.svg")
-       rgb.val <- col2rgb("grey27")
-        alpha1=50
-plot(NA,NA,xlim=c(0,3), ylim=c(0,2000), ylab="Geo mean Spawners", xlab= "Recruits per Spawner") 
-        egg(d1$RS,d1$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A1")
-        egg(d2$RS,d2$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2A")
-        egg(d3$RS,d3$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2B")
-        egg(d4$RS,d4$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3a")
-        egg(d5$RS,d5$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3b")
-        egg(d6$RS,d6$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A4")
-        egg(d7$RS,d7$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="NAA")
-        dev.off()
+
+       print("South Sant")   
+      
 ## #Greenpeter
 SSA1 <- data_forcast2(out,sdcon,z,years,1,marinescale=1,mortR=morttype,DPE=1,DPS=1,ssize=numbersims)
 SSA2a <- data_forcast2(out,sdcon,z,years,2,marinescale=1,mortR=morttype,DPE=1,DPS=1,ssize=numbersims)
@@ -865,7 +848,9 @@ ss7 <-qplot(SSNAA,"SSNAA","South Sant. NAA")
 summaryt <- data.frame("SS"=c("Recruits Per Spawner (R/S)","Geomean Spawners (NOR)","QET Threshold","SAR","Marine Survival","DPS","DPE","DPS*DPE"),
                        SSA1=ss1$table["Median"],SSA2a=ss2$table["Median"],SSA2b=ss3$table["Median"],SSA3a=ss4$table["Median"],SSA3b=ss5$table["Median"],SSA4=ss6$table["Median"],SSNAA=ss7$table["Median"])
 colnames(summaryt) <- c("SS","A1","A2a","A2b","A3a","A3b","A4","NAA")
-                write.csv(file="South.Sant.Summary.csv",summaryt)
+        write.csv(file="South.Sant.Summary.csv",summaryt)
+
+     print("Lets make the trade off plots!")   
 
      svglite(file="South_trade.svg")
        rgb.val <- col2rgb("grey27")
@@ -880,9 +865,43 @@ plot(NA,NA,xlim=c(0,3), ylim=c(0,2000), ylab="Geo mean Spawners", xlab= "Recruit
         egg(ss7$RS,ss7$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="NAA")
         dev.off()
 #  
+svglite(file="Foster_trade.svg")
+        rgb.val <- col2rgb("grey27")
+        alpha1=50
+plot(NA,NA,xlim=c(0,3), ylim=c(0,2000), ylab="Geo mean Spawners", xlab= "Recruits per Spawner") 
+        egg(f1$RS,f1$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A1")
+        egg(f2$RS,f2$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2A")
+        egg(f3$RS,f3$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2B")
+        egg(f4$RS,f4$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3a")
+        egg(f5$RS,f5$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3b")
+        egg(f6$RS,f6$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A4")
+        egg(f7$RS,f7$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="NAA")
+        dev.off()
+svglite(file="Green_trade.svg")
+       rgb.val <- col2rgb("grey27")
+        alpha1=50
+plot(NA,NA,xlim=c(0,3), ylim=c(0,2000), ylab="Geo mean Spawners", xlab= "Recruits per Spawner") 
+        egg(gp1$RS,gp1$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A1")
+        egg(gp2$RS,gp2$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2A")
+        egg(gp3$RS,gp3$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2B")
+        egg(gp4$RS,gp4$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3a")
+        egg(gp5$RS,gp5$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3b")
+        dev.off()
+     svglite(file="Det_trade.svg")
+       rgb.val <- col2rgb("grey27")
+        alpha1=50
+plot(NA,NA,xlim=c(0,3), ylim=c(0,2000), ylab="Geo mean Spawners", xlab= "Recruits per Spawner") 
+        egg(d1$RS,d1$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A1")
+        egg(d2$RS,d2$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2A")
+        egg(d3$RS,d3$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A2B")
+        egg(d4$RS,d4$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3a")
+        egg(d5$RS,d5$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A3b")
+        egg(d6$RS,d6$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="A4")
+        egg(d7$RS,d7$Abun,col1=rgb(rgb.val[1], rgb.val[2], rgb.val[3],max=255,alpha=alpha1),title="NAA")
+        dev.off()
 
         
     }
 
 
-#results(10000)
+results(100000) #uncomment to make all the results
