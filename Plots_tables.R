@@ -99,7 +99,7 @@ return(as.data.frame(out$data))
 plot_magic <- function(out,sdcon,z)
 {
 
-
+    print("plot magic")
     print(sdcon)
 
     if(length(sdcon)==3){
@@ -201,7 +201,7 @@ plot_magic <- function(out,sdcon,z)
     points(data$SpawnerYr[8:(years)],yres,type="h",col="blue",ylab="residual",xlab="Time",ylab=NA,xlab=NA)
     }
     if(length(z$par)>4)
-    {   plot(data$SpawnerYr[1:(years)],exp(z$par[4:(length(z$par))]),col="red",type="o",ylab="exp(Dev)",xlab="Time")
+    {   plot(data$SpawnerYr[1:(years)],(z$par[4:(length(z$par))]),col="red",type="o",ylab="(Dev)",xlab="Time")
         ## axis(side = 1, at = pretty(range(z$par[4:(length(z$par))])))
         ## mtext("exp(Dev)", side = 4, line = 1)  
         }
@@ -221,6 +221,7 @@ wormplot <- function(mat,main,main2,years=years,ymax=-1)
     l<- colQuantiles(mat,probs=.0275,na.rm=TRUE)
     uu <- colQuantiles(mat,probs=.80,na.rm=TRUE)
     ll<- colQuantiles(mat,probs=.20,na.rm=TRUE)
+    yearvec <- 1984+1:years
     print(max(u,na.rm=TRUE))
     if(ymax<0){
         ymax=min(c(1.1*max(u,na.rm=TRUE),10000))
@@ -228,27 +229,37 @@ wormplot <- function(mat,main,main2,years=years,ymax=-1)
     print("ymin ymax")
     print(c(ymin,ymax))
 
-       plot(1:(years),colMedians(mat,na.rm=TRUE)[1:(years)],ylim=c(ymin,ymax),type="l",xlab="Time", ylab=main2,main=main)
+       plot(yearvec[1:(years)],colMedians(mat,na.rm=TRUE)[1:(years)],ylim=c(ymin,ymax),type="l",xlab="Time", ylab=main2,main=main)
     }else{
        ymax=min(c(1.1*max(u,na.rm=TRUE),10000))
        ymin=max(c(0,.9*min(l,na.rm=TRUE)),na.rm=TRUE)
            print("ymin ymax")
     print(c(ymin,ymax))
-    plot(1:(years),colMedians(mat,na.rm=TRUE)[1:(years)],ylim=c(ymin,ymax),type="l",xlab="Time", ylab=main2,main=main)
+    plot(yearvec[1:(years)],colMedians(mat,na.rm=TRUE)[1:(years)],ylim=c(ymin,ymax),type="l",xlab="Time", ylab=main2,main=main)
     }
     print("ymin ymax")
     print(c(ymin,ymax))
     polygon(c(which(ll>=0), rev(which(ll>=0))), c(ll[which(ll>=0)], rev(uu[which(ll>=0)])), col = "darkgrey")
-    lines(1:(years),colMedians(mat,na.rm=TRUE)[1:(years)],type="l",lwd=1.4,col="black")
+    lines(yearvec[1:(years)],colMedians(mat,na.rm=TRUE)[1:(years)],type="l",lwd=1.4,col="black")
     for(i in sample(1:600,15))
     {       
-        lines(1:(years),mat[i,1:(years)],col="orange",type="l",lwd=.5)
+        lines(yearvec[1:(years)],mat[i,1:(years)],col="orange",type="l",lwd=.5)
     }
-    lines(1:(years),u[1:(years)],col="red",lwd=1.5)
-    lines(1:(years),l[1:(years)],col="red",lwd=1.5)
-    lines(1:(years),uu[1:(years)],col="black",lwd=1)
-    lines(1:(years),ll[1:(years)],col="black",lwd=1)
-    abline(v=30,col="blue")
+    lines(yearvec[1:(years)],u[1:(years)],col="red",lwd=1.5)
+    lines(yearvec[1:(years)],l[1:(years)],col="red",lwd=1.5)
+    lines(yearvec[1:(years)],uu[1:(years)],col="black",lwd=1)
+    lines(yearvec[1:(years)],ll[1:(years)],col="black",lwd=1)
+    abline(v=2019,col="blue")
+    abline(v=yearvec[35],col="blue")
+    abline(v=yearvec[37],col="magenta")
+    abline(v=2021,col="magenta")
+    abline(v=yearvec[39],col="green")
+    abline(v=2023,col="green")
+    abline(v=yearvec[41],col="purple",lwd=1)
+    abline(v=2025,col="purple")
+    abline(v=yearvec[53],col="orange",lwd=1)
+    abline(v=2037,col="orange")
+    
 }
 
 histplot <- function(vec,main,main2,med=TRUE)
@@ -269,11 +280,12 @@ histplot <- function(vec,main,main2,med=TRUE)
 plot_forcast <- function(list,worm,main,years=70)
     {
 if(worm==1){
-        par(mfcol=c(2,3))
+        par(mfcol=c(2,2))
         wormplot(list$conmat,main,"Spawners",years,ymax=-1)
         wormplot(list$simmat,main,"Simulated Marine Surival",years,-1)
-        wormplot(exp(list$devmat),main,"Simulated Marine Surival Dev",years,-1) 
+        #wormplot((list$devmat),main,"Simulated Marine Surival Dev",years,-1) 
         wormplot(list$RSmat,main,"Recruits/Spawner",years,-1)
+        #wormplot(list$RSmat[,30:45],main,"Recruits/Spawner",15,-1)
         
 }
 if(worm==2){        
@@ -284,9 +296,10 @@ if(worm==2){
         histplot(list$Abunvec,"Geomean Spawners",main2=main)
         histplot(list$QETvec,"QET Threshold 100",main2=main,med=FALSE)
         histplot(list$confi,"Freshwater Survival 2",main2=main)
-    histplot(list$marineSvec,"First 5 Years Average Marine Survival",main2=main)
-    histplot(list$DPEvec,"DPE",main2=main)
-    histplot(list$DPSvec,"DPS",main2=main)
+    histplot(list$marineSvec,"Last 15 Years Average Marine Survival",main2=main)
+    histplot(list$marineSvecShort,"First 5 Years Average Marine Survival",main2=main)
+    ## histplot(list$DPEvec,"DPE",main2=main)
+    ## histplot(list$DPSvec,"DPS",main2=main)
     histplot(list$DPEvec*list$DPSvec,"DPE*DPS",main2=main)
 
 
@@ -294,30 +307,44 @@ if(worm==2){
 
 
 if(worm==3){
-        par(mfcol=c(1,3))
+        par(mfcol=c(2,3))
         wormplot(list$QETamat,main,"Moving Average QET",years,-1)
         wormplot(list$DPSmat,main,"DPS",years,1)
         wormplot(list$DPEmat,main,"DPE",years,1)
+        wormplot(list$simmat,main,"Sims",years,1)
+        histplot(apply(list$simmat,2,mean),"mean",main2=main)
+        
+fnacf <- function(vv)
+{
+
+    m <- acf(vv,lag.max=1,plot=FALSE)
+    return(unlist(m[1]$acf))
+    
+    }
+
+        histplot(apply(log(list$simmat),1,fnacf),"rho",main2=main)
 }
 
 }
 
 table_forcast <- function(list,main){ #Note only report mean of QET
-    s=data.frame(PM=c("Recruits Per Spawner (R/S)","Geomean Spawners (NOR)","QET Threshold -100 (Mean not median)","SAR","First 5 Years Average Marine Survival","DPS","DPE","DPE*DPS"),
-                 means=c(mean(list$RSvec,na.rm=TRUE),mean(list$Abunvec,na.rm=TRUE),mean(list$QETvec,na.rm=TRUE),mean(list$confi,na.rm=TRUE),mean(list$marineSvec,na.rm=TRUE),mean(list$DPSvec,na.rm=TRUE),mean(list$DPEvec,na.rm=TRUE),mean(list$DPEvec*list$DPSvec,na.rm=TRUE)),
-                 sd=c(sd(list$RSvec,na.rm=TRUE),sd(list$Abunvec,na.rm=TRUE),sd(list$QETvec,na.rm=TRUE),sd(list$confi,na.rm=TRUE),sd(list$marineSvec,na.rm=TRUE),sd(list$DPSvec,na.rm=TRUE),sd(list$DPEvec,na.rm=TRUE),sd(list$DPEvec*list$DPSvec,na.rm=TRUE)),
-                 cv=c(sd(list$RSvec,na.rm=TRUE),sd(list$Abunvec,na.rm=TRUE),sd(list$QETvec,na.rm=TRUE),sd(list$confi,na.rm=TRUE),sd(list$marineSvec,na.rm=TRUE),sd(list$DPSvec,na.rm=TRUE),sd(list$DPEvec,na.rm=TRUE),sd(list$DPEvec*list$DPSvec,na.rm=TRUE))/c(mean(list$RSvec),mean(list$Abunvec),mean(list$QETvec),mean(list$confi),mean(list$marineSvec),mean(list$DPSvec,na.rm=TRUE),mean(list$DPEvec,na.rm=TRUE),mean(list$DPEvec*list$DPSvec,na.rm=TRUE)),
+    s=data.frame(PM=c("Recruits Per Spawner (R/S)","Geomean Spawners (NOR)","QET Threshold -100 (Mean not median)","SAR","Last 15 years Average Marine Survival","First 5 Years Average Marine Survival","DPS","DPE","DPE*DPS"),
+                 means=c(mean(list$RSvec,na.rm=TRUE),mean(list$Abunvec,na.rm=TRUE),mean(list$QETvec,na.rm=TRUE),mean(list$confi,na.rm=TRUE),mean(list$marineSvec,na.rm=TRUE),mean(list$marineSvecShort,na.rm=TRUE)
+                        ,mean(list$DPSvec,na.rm=TRUE),mean(list$DPEvec,na.rm=TRUE),mean(list$DPEvec*list$DPSvec,na.rm=TRUE)),
+                 sd=c(sd(list$RSvec,na.rm=TRUE),sd(list$Abunvec,na.rm=TRUE),sd(list$QETvec,na.rm=TRUE),sd(list$confi,na.rm=TRUE),sd(list$marineSvec,na.rm=TRUE),sd(list$marineSvecShort,na.rm=TRUE),
+                      sd(list$DPSvec,na.rm=TRUE),sd(list$DPEvec,na.rm=TRUE),sd(list$DPEvec*list$DPSvec,na.rm=TRUE)),
+                 cv=c(sd(list$RSvec,na.rm=TRUE),sd(list$Abunvec,na.rm=TRUE),sd(list$QETvec,na.rm=TRUE),sd(list$confi,na.rm=TRUE),sd(list$marineSvec,na.rm=TRUE),sd(list$marineSvecShort,na.rm=TRUE),
+                      sd(list$DPSvec,na.rm=TRUE),sd(list$DPEvec,na.rm=TRUE),sd(list$DPEvec*list$DPSvec,na.rm=TRUE))/c(mean(list$RSvec),mean(list$Abunvec),mean(list$QETvec),mean(list$confi),mean(list$marineSvec),mean(list$marineSvecShort,na.rm=TRUE)
+                                                                                                                     ,mean(list$DPSvec,na.rm=TRUE),mean(list$DPEvec,na.rm=TRUE),mean(list$DPEvec*list$DPSvec,na.rm=TRUE)),
                  lower=c(quantile(list$RSvec,.025,na.rm=TRUE),quantile(list$Abunvec,.025,na.rm=TRUE),quantile(list$QETvec,.025,na.rm=TRUE),
-                         quantile(list$confi,.025,na.rm=TRUE),quantile(list$marineSvec,.025,na.rm=TRUE),quantile(list$DPSvec,.25,na.rm=TRUE),quantile(list$DPEvec,.25,na.rm=TRUE),quantile(list$DPEvec*list$DPSvec,.25,na.rm=TRUE)),
+                         quantile(list$confi,.025,na.rm=TRUE),quantile(list$marineSvec,.025,na.rm=TRUE),quantile(list$marineSvecShort,.025,na.rm=TRUE),quantile(list$DPSvec,.25,na.rm=TRUE),quantile(list$DPEvec,.25,na.rm=TRUE),quantile(list$DPEvec*list$DPSvec,.25,na.rm=TRUE)),
                  median=c(median(list$RSvec,na.rm=TRUE),median(list$Abunvec,na.rm=TRUE),mean(list$QETvec,na.rm=TRUE),median(list$confi,na.rm=TRUE),
-                          median(list$marineSvec,na.rm=TRUE),median(list$DPSvec,na.rm=TRUE),median(list$DPEvec,na.rm=TRUE),median(list$DPEvec*list$DPSvec,na.rm=TRUE)),
-                 upper=c(quantile(list$RSvec,.975,na.rm=TRUE),quantile(list$Abunvec,.975,na.rm=TRUE),quantile(list$QETvec,.975,na.rm=TRUE),quantile(list$confi,.975,na.rm=TRUE),quantile(list$marineSvec,.975,na.rm=TRUE)
-                        ,quantile(list$DPSvec,.975,na.rm=TRUE),quantile(list$DPEvec,.975,na.rm=TRUE),quantile(list$DPEvec*list$DPSvec,.975,na.rm=TRUE)))
-    colnames(s) <- c("","Mean","SD","CV",".0275","Median",".0975")
-    return(list(table=s,RS=list$RSvec,Abund=list$Abunvec))
+                          median(list$marineSvec,na.rm=TRUE),median(list$marineSvecShort,na.rm=TRUE),median(list$DPSvec,na.rm=TRUE),median(list$DPEvec,na.rm=TRUE),median(list$DPEvec*list$DPSvec,na.rm=TRUE)),
+                 upper=c(quantile(list$RSvec,.975,na.rm=TRUE),quantile(list$Abunvec,.975,na.rm=TRUE),quantile(list$QETvec,.975,na.rm=TRUE),quantile(list$confi,.975,na.rm=TRUE),quantile(list$marineSvec,.975,na.rm=TRUE),quantile(list$marineSvecShort,.975,na.rm=TRUE),
+                        quantile(list$DPSvec,.975,na.rm=TRUE),quantile(list$DPEvec,.975,na.rm=TRUE),quantile(list$DPEvec*list$DPSvec,.975,na.rm=TRUE)))
+                colnames(s) <- c("","Mean","SD","CV",".0275","Median",".0975")
+    return(list(table=s,RS=list$RSvec,Abund=list$Abunvec,QET=list$QETvec))
         }
-
-        
 
 
 

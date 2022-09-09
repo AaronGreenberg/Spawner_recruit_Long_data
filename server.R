@@ -26,7 +26,7 @@ initsize <- 419
 years <- 38
 
  dataInputfit <- reactive({
-    inputs <- c(.03,120,1,0*rnorm(38,0,1)) #initializaton
+    inputs <- c(.03,120,1,0*rnorm(38,0,1)*0) #initializaton
     print("inputs")
     print(input$DevSD)
     print(input$PriorSD)
@@ -89,7 +89,7 @@ if(input$ssize==2)
 lPG=data_forcast(out,sdcon,z,70,input$EIS,marinescale=input$marinescale,mortR=input$Mort,DPE=input$dpe,DPS=input$dps,river=2,ssize=ssmagic,sims=sims)
  
         text <- c("Alt1","Alt2a","Alt2b","Alt3a","Alt3b","Alt4","AltNAA","General","Used for estimation")
-        plot_forcast(LPG,worm=input$worm,main=text[input$EIS])
+        plot_forcast(lPG,worm=input$worm,main=text[input$EIS])
 
 })
 
